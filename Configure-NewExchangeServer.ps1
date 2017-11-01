@@ -162,10 +162,8 @@ Function ReplaceURLs {
         [Hashtable]$URLs
         )
     # Comparing and replacing URLs
-            Get-OutlookAnywhere -Server $ServerName | Set-OutlookAnywhere -ExternalHostname $Expected.OA.ExternalHostname -ExternalClientAuthenticationMethod $DefaultAuthenticationMethod -ExternalClientsRequireSSL $ExternalSSL
             Get-OutlookAnyWhere -Server $ServerName | Set-OutlookAnyWhere-Object -ExternalHostname $Expected.OA.ExternalHostname -ExternalClientAuthenticationMethod $DefaultAuthenticationMethod -ExternalClientsRequireSSL $ExternalSSL
         if (!($URLs.OA.InternalHostname.HostnameString.Equals($Expected.OA.InternalHostname)) -OR !($URLs.OA.InternalHostname.HostnameString)) {
-            Get-OutlookAnywhere -Server $ServerName | Set-OutlookAnywhere -InternalHostname $Expected.OA.InternalHostname -InternalClientAuthenticationMethod $DefaultAuthenticationMethod -InternalClientsRequireSSL $InternalSSL
             Get-OutlookAnyWhere -Server $ServerName | Set-OutlookAnyWhere-Object -InternalHostname $Expected.OA.InternalHostname -InternalClientAuthenticationMethod $DefaultAuthenticationMethod -InternalClientsRequireSSL $InternalSSL
             }
             Get-OwaVirtualDirectory -Server $ServerName | Set-OwaVirtualDirectory -ExternalUrl $Expected.OWA.ExternalUrl -LogonFormat $OWALogonFormat -DefaultDomain $OWADefaultDomain -InstantMessagingCertificateThumbprint $IMCertThumb -InstantMessagingType $IMType -InstantMessagingEnabled $IMEnabled -InstantMessagingServerName $IMServerName
