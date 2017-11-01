@@ -140,14 +140,14 @@ Function GetURLs {
         EAS = @()
         AutoD = @()
         }
-    $Results.OA = Get-OutlookAnywhere -Server $ServerName -AdPropertiesOnly | Select InternalHostName,ExternalHostName
-    $Results.OWA = Get-OWAVirtualDirectory -Server $ServerName -AdPropertiesOnly | Select InternalURL,ExternalURL
-    $Results.ECP = Get-ECPVirtualDirectory -Server $ServerName -AdPropertiesOnly | Select InternalURL,ExternalURL
-    $Results.OAB = Get-OABVirtualDirectory -Server $ServerName -AdPropertiesOnly | Select InternalURL,ExternalURL
-    $Results.EWS = Get-WebServicesVirtualDirectory -Server $ServerName -AdPropertiesOnly | Select InternalURL,ExternalURL
-    $Results.MAPI = Get-MAPIVirtualDirectory -Server $ServerName -AdPropertiesOnly | Select InternalURL,ExternalURL
-    $Results.EAS = Get-ActiveSyncVirtualDirectory -Server $ServerName -AdPropertiesOnly | Select InternalURL,ExternalURL
-    $Results.AutoD = Get-ClientAccessService $ServerName | Select AutoDiscoverServiceInternalUri
+    $Results.OA = Get-OutlookAnyWhere -Server $ServerName -AdPropertiesOnly | Select-Object InternalHostName,ExternalHostName
+    $Results.OWA = Get-OWAVirtualDirectory -Server $ServerName -AdPropertiesOnly | Select-Object InternalURL,ExternalURL
+    $Results.ECP = Get-ECPVirtualDirectory -Server $ServerName -AdPropertiesOnly | Select-Object InternalURL,ExternalURL
+    $Results.OAB = Get-OABVirtualDirectory -Server $ServerName -AdPropertiesOnly | Select-Object InternalURL,ExternalURL
+    $Results.EWS = Get-WebServicesVirtualDirectory -Server $ServerName -AdPropertiesOnly | Select-Object InternalURL,ExternalURL
+    $Results.MAPI = Get-MAPIVirtualDirectory -Server $ServerName -AdPropertiesOnly | Select-Object InternalURL,ExternalURL
+    $Results.EAS = Get-ActiveSyncVirtualDirectory -Server $ServerName -AdPropertiesOnly | Select-Object InternalURL,ExternalURL
+    $Results.AutoD = Get-ClientAccessService $ServerName | Select-Object AutoDiscoverServiceInternalUri
 
     return $Results
 }
@@ -162,9 +162,9 @@ Function ReplaceURLs {
         [Hashtable]$URLs
         )
     # Comparing and replacing URLs
-            Get-OutlookAnywhere -Server $ServerName | Set-OutlookAnywhere -ExternalHostname $Expected.OA.ExternalHostname -ExternalClientAuthenticationMethod $DefaultAuthenticationMethod -ExternalClientsRequireSSL $ExternalSSL
+            Get-OutlookAnyWhere -Server $ServerName | Set-OutlookAnyWhere-Object -ExternalHostname $Expected.OA.ExternalHostname -ExternalClientAuthenticationMethod $DefaultAuthenticationMethod -ExternalClientsRequireSSL $ExternalSSL
         if (!($URLs.OA.InternalHostname.HostnameString.Equals($Expected.OA.InternalHostname)) -OR !($URLs.OA.InternalHostname.HostnameString)) {
-            Get-OutlookAnywhere -Server $ServerName | Set-OutlookAnywhere -InternalHostname $Expected.OA.InternalHostname -InternalClientAuthenticationMethod $DefaultAuthenticationMethod -InternalClientsRequireSSL $InternalSSL
+            Get-OutlookAnyWhere -Server $ServerName | Set-OutlookAnyWhere-Object -InternalHostname $Expected.OA.InternalHostname -InternalClientAuthenticationMethod $DefaultAuthenticationMethod -InternalClientsRequireSSL $InternalSSL
             }
             Get-OwaVirtualDirectory -Server $ServerName | Set-OwaVirtualDirectory -ExternalUrl $Expected.OWA.ExternalUrl -LogonFormat $OWALogonFormat -DefaultDomain $OWADefaultDomain -InstantMessagingCertificateThumbprint $IMCertThumb -InstantMessagingType $IMType -InstantMessagingEnabled $IMEnabled -InstantMessagingServerName $IMServerName
         if (!($URLs.OWA.InternalUrl.AbsoluteUri.Equals($Expected.OWA.InternalUrl)) -OR !($URLs.OWA.InternalUrl.AbsoluteUri)) {
@@ -208,13 +208,13 @@ Function DisableUM {
         }
 }
 
-Function Add-SendConnectors {
+Function Add-SendConnector {
     [CmdletBinding()]
     param(
         [Parameter( Position=0,Mandatory=$true)]
         [string]$ServerName
         )
-    $Senders = Get-SendConnector | where {$_.SourceTransportServers -like $MimicSendConnectorsFromServer}
+    $Senders = Get-SendConnector | Where-Object {$_.SourceTransportServers -like $MimicSendConnectorsFromServer}
     foreach ($Sender in $Senders) {
         $Members = $Sender.SourceTransportServers
         $Members += $ServerName
@@ -222,24 +222,24 @@ Function Add-SendConnectors {
         }
 }
 
-Function Apply-Certificate {
+Function Set-Certificate {
     [CmdletBinding()]
     param(
         [Parameter( Position=0,Mandatory=$true)]
         [string]$ServerName
         )
     Import-ExchangeCertificate -Server $ServerName -FileName $EXCert -Password $EXCertPW -FriendlyName "Exchange 2016 SSL Certificate" -PrivateKeyExportable $true -Confirm:$false
-    $Thumpprint = (Get-ExchangeCertificate -Server $ServerName | where {$_.Subject -like "*$ExchangeURL*"}).Thumbprint
+    $Thumpprint = (Get-ExchangeCertificate -Server $ServerName | Where-Object {$_.Subject -like "*$ExchangeURL*"}).Thumbprint
     Enable-ExchangeCertificate -Server $ServerName -Thumbprint $Thumpprint -Services IMAP,POP,IIS,SMTP -Confirm:$false
 }
 
-Function Add-ReceiveConnectors {
+Function Add-ReceiveConnector {
     [CmdletBinding()]
     param(
         [Parameter( Position=0,Mandatory=$true)]
         [string]$ServerName
         )
-    $connectors = Get-ReceiveConnector -Server $ReceiveConnectorTemplateServer | where {$_.name -notlike "*$ReceiveConnectorTemplateServer*"}
+    $connectors = Get-ReceiveConnector -Server $ReceiveConnectorTemplateServer | Where-Object {$_.name -notlike "*$ReceiveConnectorTemplateServer*"}
     foreach ($connector in $connectors) {
         foreach ($server in $ServerName) {
             if (!(Get-ReceiveConnector -Identity "$server\$($connector.name)" -ErrorAction silentlycontinue)) {
@@ -267,27 +267,27 @@ else
 ############## PROCESS ###############
 
 foreach ($i in $Server) {
-    Write-Host "Gathering Virtual Directory URLs" -ForegroundColor Green
+    Write-Console "Gathering Virtual Directory URLs" -ForegroundColor Green
     $URLs = GetURLs -ServerName $i
-    Write-Host "Updating Virtual Directory URLs" -ForegroundColor Green
+    Write-Console "Updating Virtual Directory URLs" -ForegroundColor Green
     ReplaceURLs -ServerName $i -URLs $URLs
     if (!$KeepUMEnabled) {
-        Write-Host "Disabling UM Services" -ForegroundColor Green
+        Write-Console "Disabling UM Services" -ForegroundColor Green
         DisableUM -ServerName $i
         }
-    Write-Host "Applying Exchange Certificate" -ForegroundColor Green
-    Apply-Certificate -ServerName $i
-    Write-Host "Adding $i to DAG $DAG" -ForegroundColor Green
+    Write-Console "Applying Exchange Certificate" -ForegroundColor Green
+    Set-Certificate -ServerName $i
+    Write-Console "Adding $i to DAG $DAG" -ForegroundColor Green
     Add-DatabaseAvailabilityGroupServer -Identity $DAG -MailboxServer $i
-    Write-Host "Adding $i to Send Connectors" -ForegroundColor Green
-    Add-SendConnectors -ServerName $i
-    Write-Host "Activating Exchange Server" -ForegroundColor Green
+    Write-Console "Adding $i to Send Connectors" -ForegroundColor Green
+    Add-SendConnector -ServerName $i
+    Write-Console "Activating Exchange Server" -ForegroundColor Green
     Set-ExchangeServer -Identity $i -ProductKey $ProductKey
-    Write-Host "Configuring Receive Connectors on server $i" -ForegroundColor Green
-    Add-ReceiveConnectors -ServerName $i
-    Write-Host "Restarting the Microsoft Exchange Information Store Service on $i" -ForegroundColor Green    
+    Write-Console "Configuring Receive Connectors on server $i" -ForegroundColor Green
+    Add-ReceiveConnector -ServerName $i
+    Write-Console "Restarting the Microsoft Exchange Information Store Service on $i" -ForegroundColor Green    
     Get-Service -ComputerName $i -Name "MSExchangeIS"
-    Write-Host "Restarting OWA App Pool on server $i" -ForegroundColor Green
+    Write-Console "Restarting OWA App Pool on server $i" -ForegroundColor Green
     Invoke-Command -ComputerName $i -ScriptBlock {Restart-WebAppPool -Name MSExchangeOWAAppPool}
     }
      
